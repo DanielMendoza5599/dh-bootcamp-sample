@@ -1,15 +1,13 @@
 package com.dharbor.sales.services;
 
-import com.dharbor.sales.clients.NotificationsFeignClient;
-import com.dharbor.sales.clients.RickMortyApiFeignClient;
-import com.dharbor.sales.clients.StockFeignClient;
-import com.dharbor.sales.clients.UsersFeignClient;
+import com.dharbor.sales.clients.*;
 import com.dharbor.sales.exceptions.SaleNotCompletedException;
 import com.dharbor.sales.model.User;
 import com.dharbor.sales.model.dto.NewSaleDto;
 import com.dharbor.sales.model.rest.Character;
 import com.dharbor.sales.model.rest.ProductReservationRequest;
 import feign.FeignException;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -25,7 +23,7 @@ public class NewSalesService {
 
     private final RickMortyApiFeignClient rickMortyApiFeignClient;
 
-    //TODO: Apply circuit breaking and error handling for Wed 4/16/2025
+    @CircuitBreaker(name = "newSaleCB", fallbackMethod = "fallbackNewSale")
     public String newSale(NewSaleDto newSaleDto) throws SaleNotCompletedException {
 
         User user;
@@ -50,4 +48,8 @@ public class NewSalesService {
         return "New Sale for " + user.getName() + " with reservation id " + reservationId + " and user has been notified " + notification;
     }
 
+    public String fallbackNewSale(NewSaleDto newSaleDto, Throwable t) {
+        System.out.println(">>> Fallback ACTIVATED: " + t.getMessage());
+        return "Fallback: " + t.getMessage();
+    }
 }
